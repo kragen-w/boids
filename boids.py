@@ -2,6 +2,7 @@ import dudraw
 from random import randint
 from quads import QuadTree
 from quads import BoundingBox
+import math
 
 
 # Set the simulation space dimensions
@@ -52,6 +53,23 @@ class AllBoids:
             avg_vel_x += point.data.x_velocity
             avg_vel_y += point.data.y_velocity
         return avg_x / len(points), avg_y / len(points), avg_vel_x / len(points), avg_vel_y / len(points)
+    
+    def repel_collision(self, boid, collisions):
+        total_x_repulsion = 0
+        total_y_repulsion = 0
+        strength = 1  # Constant to scale repulsion
+        epsilon = 0.1  # Small value to prevent division by zero
+
+        # Compute repulsion forces from each neighbor
+        for collision in collisions:
+            distance = math.sqrt((collision.x - boid.x) ** 2 + (collision.y - boid.y) ** 2)
+            avoidance_factor = strength / (distance + epsilon)  # Stronger repulsion if closer
+            
+            # Calculate the repulsion force for this collision
+            total_x_repulsion += (boid.x - collision.x) * avoidance_factor
+            total_y_repulsion += (boid.y - collision.y) * avoidance_factor
+
+        return total_x_repulsion, total_y_repulsion
     
     def boids_approach_average(self):
         # Make each boid (bird) move slightly toward the flock's center
@@ -105,22 +123,21 @@ class AllBoids:
                 avg_x_c, avg_y_c, avg_vel_x_c, avg_vel_y_c = self.get_average_position_and_velocity_points(collisions)
 
 
+                x_repel, y_repel = self.repel_collision(boid, collisions)
+
+                boid.x_velocity += x_repel
+                boid.y_velocity += y_repel
+
 
                 # coll_vel_aling_fac = 0.005  # Small factor for gradual alignment
                 # boid.x_velocity -= (avg_vel_x_c - boid.x_velocity) * coll_vel_aling_fac
                 # boid.y_velocity -= (avg_vel_y_c - boid.y_velocity) * coll_vel_aling_fac
 
-                coll_pos_aling_fac = .5
-                boid.x_velocity += (avg_x_c - boid.x) * coll_pos_aling_fac
-                boid.y_velocity += (avg_y_c - boid.y) * coll_pos_aling_fac
+                # coll_pos_aling_fac = 1
+                # boid.x_velocity += (avg_x_c - boid.x) * coll_pos_aling_fac
+                # boid.y_velocity += (avg_y_c - boid.y) * coll_pos_aling_fac
 
-                # avoidance_factor = 0.1  # Small factor for gradual divergence
-                # boid.x_velocity -= (avg_x_velocity - boid.x_velocity) * avoidance_factor
-                # boid.y_velocity -= (avg_y_velocity - boid.y_velocity) * avoidance_factor
-
-                # # Steer away from neighbors' average position (optional)
-                # boid.x_velocity += (boid.x - avg_x) / 10000
-                # boid.y_velocity += (boid.y - avg_y) / 10000
+               
 
 
 
@@ -131,13 +148,13 @@ class AllBoids:
 
 
 
-                neigh_vel_aling_fac = 0.005  # Small factor for gradual alignment
+                neigh_vel_aling_fac = 0.05  # Small factor for gradual alignment
                 boid.x_velocity += (avg_vel_x - boid.x_velocity) * neigh_vel_aling_fac
                 boid.y_velocity += (avg_vel_y - boid.y_velocity) * neigh_vel_aling_fac
 
 
                 # Adjust velocity to move toward the average position of neighbors
-                neigh_pos_aling_fac = 0.0001
+                neigh_pos_aling_fac = 0.001
                 boid.x_velocity += (avg_x - boid.x) * neigh_pos_aling_fac
                 boid.y_velocity += (avg_y - boid.y) * neigh_pos_aling_fac
                 
