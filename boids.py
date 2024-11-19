@@ -113,8 +113,8 @@ class AllBoids:
                 # Get a list of nearby boids
                 x = boid.x
                 y = boid.y
-                collision_bounding_radius = 10
-                neighbor_bounding_radius =15
+                collision_bounding_radius = 2
+                neighbor_bounding_radius =7
 
                 neighbor_bb = BoundingBox(x-neighbor_bounding_radius, y-neighbor_bounding_radius, x+neighbor_bounding_radius, y+neighbor_bounding_radius)
                 collision_bb = BoundingBox(x-collision_bounding_radius, y-collision_bounding_radius, x+collision_bounding_radius, y+collision_bounding_radius)
@@ -148,13 +148,13 @@ class AllBoids:
 
 
 
-                neigh_vel_aling_fac = 0.05  # Small factor for gradual alignment
+                neigh_vel_aling_fac = 0.5  # Small factor for gradual alignment
                 boid.x_velocity += (avg_vel_x - boid.x_velocity) * neigh_vel_aling_fac
                 boid.y_velocity += (avg_vel_y - boid.y_velocity) * neigh_vel_aling_fac
 
 
                 # Adjust velocity to move toward the average position of neighbors
-                neigh_pos_aling_fac = 0.001
+                neigh_pos_aling_fac = 0.01
                 boid.x_velocity += (avg_x - boid.x) * neigh_pos_aling_fac
                 boid.y_velocity += (avg_y - boid.y) * neigh_pos_aling_fac
                 
@@ -191,8 +191,8 @@ class Boid:
         # Initialize a boid (bird) with position, velocity, and size
         self.x = x
         self.y = y
-        self.x_velocity = 0
-        self.y_velocity = 0
+        self.x_velocity = randint(-10,10)/100
+        self.y_velocity = randint(-10,10)/100
         self.avg_x = 0
         self.avg_y = 0
         self.size = size
@@ -211,7 +211,7 @@ class Boid:
 
 
 # Create a group of 100 boids (birds)
-b = AllBoids(100)
+b = AllBoids(200)
 b.draw()
 
 # Simulation loop
