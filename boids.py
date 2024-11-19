@@ -57,7 +57,7 @@ class AllBoids:
     def repel_collision(self, boid, collisions):
         total_x_repulsion = 0
         total_y_repulsion = 0
-        strength = 1  # Constant to scale repulsion
+        strength = .1  # Constant to scale repulsion
         epsilon = 0.1  # Small value to prevent division by zero
 
         # Compute repulsion forces from each neighbor
@@ -113,7 +113,7 @@ class AllBoids:
                 # Get a list of nearby boids
                 x = boid.x
                 y = boid.y
-                collision_bounding_radius = 1
+                collision_bounding_radius = 10
                 neighbor_bounding_radius =15
 
                 neighbor_bb = BoundingBox(x-neighbor_bounding_radius, y-neighbor_bounding_radius, x+neighbor_bounding_radius, y+neighbor_bounding_radius)
