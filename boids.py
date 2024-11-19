@@ -1,6 +1,8 @@
 import dudraw
 from random import randint
 from quads import QuadTree
+from quads import BoundingBox
+
 
 # Set the simulation space dimensions
 x_scale = 100
@@ -93,20 +95,54 @@ class AllBoids:
                 # Get a list of nearby boids
                 x = boid.x
                 y = boid.y
-                neighbors = quadTree.nearest_neighbors((x, y), neighbor_num)
+                collision_bounding_radius = 1
+                neighbor_bounding_radius =15
+
+                neighbor_bb = BoundingBox(x-neighbor_bounding_radius, y-neighbor_bounding_radius, x+neighbor_bounding_radius, y+neighbor_bounding_radius)
+                collision_bb = BoundingBox(x-collision_bounding_radius, y-collision_bounding_radius, x+collision_bounding_radius, y+collision_bounding_radius)
+                collisions = quadTree.within_bb(collision_bb)
+                neighbors = quadTree.within_bb(neighbor_bb)
+                avg_x_c, avg_y_c, avg_vel_x_c, avg_vel_y_c = self.get_average_position_and_velocity_points(collisions)
+
+
+
+                # coll_vel_aling_fac = 0.005  # Small factor for gradual alignment
+                # boid.x_velocity -= (avg_vel_x_c - boid.x_velocity) * coll_vel_aling_fac
+                # boid.y_velocity -= (avg_vel_y_c - boid.y_velocity) * coll_vel_aling_fac
+
+                coll_pos_aling_fac = .5
+                boid.x_velocity += (avg_x_c - boid.x) * coll_pos_aling_fac
+                boid.y_velocity += (avg_y_c - boid.y) * coll_pos_aling_fac
+
+                # avoidance_factor = 0.1  # Small factor for gradual divergence
+                # boid.x_velocity -= (avg_x_velocity - boid.x_velocity) * avoidance_factor
+                # boid.y_velocity -= (avg_y_velocity - boid.y_velocity) * avoidance_factor
+
+                # # Steer away from neighbors' average position (optional)
+                # boid.x_velocity += (boid.x - avg_x) / 10000
+                # boid.y_velocity += (boid.y - avg_y) / 10000
+
+
+
+
                 # Calculate the average position of neighbors
                 avg_x, avg_y, avg_vel_x, avg_vel_y = self.get_average_position_and_velocity_points(neighbors)
 
 
-                alignment_factor = 0.005  # Small factor for gradual alignment
-                boid.x_velocity += (avg_vel_x - boid.x_velocity) * alignment_factor
-                boid.y_velocity += (avg_vel_y - boid.y_velocity) * alignment_factor
+
+
+                neigh_vel_aling_fac = 0.005  # Small factor for gradual alignment
+                boid.x_velocity += (avg_vel_x - boid.x_velocity) * neigh_vel_aling_fac
+                boid.y_velocity += (avg_vel_y - boid.y_velocity) * neigh_vel_aling_fac
 
 
                 # Adjust velocity to move toward the average position of neighbors
-                alignment_factor2 = 0.01
-                boid.x_velocity += (avg_x - boid.x) * alignment_factor2
-                boid.y_velocity += (avg_y - boid.y) * alignment_factor2
+                neigh_pos_aling_fac = 0.0001
+                boid.x_velocity += (avg_x - boid.x) * neigh_pos_aling_fac
+                boid.y_velocity += (avg_y - boid.y) * neigh_pos_aling_fac
+                
+                
+                
                 # Update position based on new velocity
                 boid.x += boid.x_velocity
                 boid.y += boid.y_velocity
@@ -116,8 +152,8 @@ class AllBoids:
         else:
             # In subsequent frames, continue moving toward the previously calculated average position
             for boid in self.boids.values():
-                boid.x_velocity += (boid.avg_x - boid.x) / 100
-                boid.y_velocity += (boid.avg_y - boid.y) / 100
+                boid.x_velocity += (boid.avg_x - boid.x) * alignment_factor
+                boid.y_velocity += (boid.avg_y - boid.y) * alignment_factor
                 boid.x += boid.x_velocity
                 boid.y += boid.y_velocity
 
@@ -165,7 +201,7 @@ b.draw()
 x = 0
 while True:
     b.draw()  # Draw the boids
-    b.move_to_neighbors(5, x)  # Make boids move toward neighbors
+    b.move_to_neighbors(20, x)  # Make boids move toward neighbors
     b.check_borders()  # Prevent boids from leaving the area
     dudraw.show(1)  # Update the screen
     dudraw.clear()  # Clear the screen for the next frame
