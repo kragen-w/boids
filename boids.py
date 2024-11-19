@@ -57,7 +57,7 @@ class AllBoids:
     def repel_collision(self, boid, collisions):
         total_x_repulsion = 0
         total_y_repulsion = 0
-        strength = .1  # Constant to scale repulsion
+        strength = 50  # Constant to scale repulsion
         epsilon = 0.1  # Small value to prevent division by zero
 
         # Compute repulsion forces from each neighbor
@@ -91,14 +91,14 @@ class AllBoids:
                 else:
                     boid.x = 0
                 # Reverse x velocity and reduce it to simulate a bounce
-                boid.x_velocity *= -0.7
+                boid.x_velocity *= -1
             if boid.y >= 100 or boid.y <= 0:
                 if boid.y >= 100:
                     boid.y = 100
                 else:
                     boid.y = 0
                 # Reverse y velocity and reduce it to simulate a bounce
-                boid.y_velocity *= -0.7
+                boid.y_velocity *= -1
 
     def move_to_neighbors(self, neighbor_num, delay):
         # Make each boid (bird) move toward its nearby neighbors
@@ -148,13 +148,13 @@ class AllBoids:
 
 
 
-                neigh_vel_aling_fac = .001  # Small factor for gradual alignment
+                neigh_vel_aling_fac = 1.1  # Small factor for gradual alignment
                 boid.x_velocity += (avg_vel_x - boid.x_velocity) * neigh_vel_aling_fac
                 boid.y_velocity += (avg_vel_y - boid.y_velocity) * neigh_vel_aling_fac
 
 
                 # Adjust velocity to move toward the average position of neighbors
-                neigh_pos_aling_fac = 0.1
+                neigh_pos_aling_fac = 0.001
                 boid.x_velocity += (avg_x - boid.x) * neigh_pos_aling_fac
                 boid.y_velocity += (avg_y - boid.y) * neigh_pos_aling_fac
                 
