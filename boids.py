@@ -114,7 +114,7 @@ class AllBoids:
                 x = boid.x
                 y = boid.y
                 collision_bounding_radius = 2
-                neighbor_bounding_radius =7
+                neighbor_bounding_radius = 15
 
                 neighbor_bb = BoundingBox(x-neighbor_bounding_radius, y-neighbor_bounding_radius, x+neighbor_bounding_radius, y+neighbor_bounding_radius)
                 collision_bb = BoundingBox(x-collision_bounding_radius, y-collision_bounding_radius, x+collision_bounding_radius, y+collision_bounding_radius)
@@ -148,13 +148,13 @@ class AllBoids:
 
 
 
-                neigh_vel_aling_fac = 0.5  # Small factor for gradual alignment
+                neigh_vel_aling_fac = .001  # Small factor for gradual alignment
                 boid.x_velocity += (avg_vel_x - boid.x_velocity) * neigh_vel_aling_fac
                 boid.y_velocity += (avg_vel_y - boid.y_velocity) * neigh_vel_aling_fac
 
 
                 # Adjust velocity to move toward the average position of neighbors
-                neigh_pos_aling_fac = 0.01
+                neigh_pos_aling_fac = 0.1
                 boid.x_velocity += (avg_x - boid.x) * neigh_pos_aling_fac
                 boid.y_velocity += (avg_y - boid.y) * neigh_pos_aling_fac
                 
