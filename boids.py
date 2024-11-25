@@ -23,10 +23,13 @@ dudraw.set_y_scale(0,y_scale)
 
 
 class AllBoids:
-    def __init__(self, count, neighbor_radius, collision_radius):
+    def __init__(self, count, neighbor_radius, collision_radius, mouse_radius):
         self.boids = []
         self.coll_rad = collision_radius#put this in loop for changing this on the fly in the future
         self.neigh_rad = neighbor_radius
+        self.mouse_radius = mouse_radius
+        self.obs_rad = 10
+        self.obs = []
         for i in range(count):
             random1 = randint(60, x_scale - 60)
             random2 = randint(60, y_scale - 60)
@@ -37,6 +40,8 @@ class AllBoids:
     def draw(self):
         for boid in self.boids:
             boid.draw()
+        for obs in self.obs:
+            dudraw.filled_circle(obs.x, obs.y, self.mouse_radius - 25)
 
         avg_x, avg_y = self.get_average_position()
         avg_boid = Boid(avg_x, avg_y, 2)
@@ -55,36 +60,78 @@ class AllBoids:
     def move_to_neighbors(self):
         quadTree = QuadTree((x_scale/2,y_scale/2), x_scale, y_scale)
         for boid in self.boids:
+            boid.avoid_borders()
             quadTree.insert((boid.x,boid.y), boid)
+        for obj in self.obs:
+            quadTree.insert((obj.x,obj.y), obj)
         for boid in self.boids:
 
 
 
+            if dudraw.mouse_clicked():
+                self.obs.append(Obj(dudraw.mouse_x(), dudraw.mouse_y(), self.obs_rad))
 
-            # neighbor_bb = BoundingBox(round(x-self.neigh_rad), round(y-self.neigh_rad), round(x+self.neigh_rad), round(y+self.neigh_rad))
-            # collision_bb = BoundingBox(x-self.coll_rad, y-self.coll_rad, x+self.coll_rad, y+self.coll_rad)
-            # collisions = quadTree.within_bb(collision_bb)
-            # neighbors = quadTree.within_bb(neighbor_bb)
+            
 
 
             neighbor_bb = BoundingBox(boid.x-self.neigh_rad, boid.y-self.neigh_rad, boid.x+self.neigh_rad, boid.y+self.neigh_rad)
-            collision_bb = BoundingBox(boid.x-self.coll_rad,boid.y-self.coll_rad, boid.x+self.coll_rad, boid.y+self.coll_rad)
-            collisions = quadTree.within_bb(collision_bb)
             neighbors = quadTree.within_bb(neighbor_bb)
 
-            self.mouse_x = dudraw.mouse_x()
-            self.mouse_y = dudraw.mouse_y()
+            collision_bb = BoundingBox(boid.x-self.coll_rad,boid.y-self.coll_rad, boid.x+self.coll_rad, boid.y+self.coll_rad)
+            collisions = quadTree.within_bb(collision_bb)
+
+            obs_bb = BoundingBox(boid.x-self.mouse_radius,boid.y-self.mouse_radius, boid.x+self.mouse_radius, boid.y+self.mouse_radius)
+            obs = quadTree.within_bb(obs_bb)
+
+
+            # for obs in self.obs:
+            #     collisions.append()
 
             boid.bird_brain()
             boid.move_away(collisions)
-            
+            boid.obs_move_away(obs)
+
+            # self.away_from_mouse(self.mouse_x, self.mouse_y, quadTree)
+
+            # for obs in self.obs:
+            #     self.away_from_obs(obs.x, obs.y, quadTree)
+
             boid.move_twards(neighbors)
             boid.speed_limit()
-            boid.avoid_borders()
             boid.align(neighbors)
             # boid.bird_brain()
             boid.x += boid.dx
             boid.y += boid.dy
+
+            
+    def away_from_mouse(self, x, y, tree):
+        self.mouse_x = dudraw.mouse_x()
+        self.mouse_y = dudraw.mouse_y()
+        mouse_bb = BoundingBox(self.mouse_x-self.mouse_radius,self.mouse_y-self.mouse_radius, self.mouse_x+self.mouse_radius, self.mouse_y+self.mouse_radius)
+        m_coll = tree.within_bb(mouse_bb)
+        move_rate_away = 0.00002
+
+        
+        for boid in m_coll:
+            move_factor_x = boid.data.x - x
+            move_factor_y = boid.data.y - y
+            boid.data.dx += move_factor_x * move_rate_away
+            boid.data.dy += move_factor_y * move_rate_away
+    
+    def away_from_obs(self, x, y, tree):
+        rad = self.mouse_radius + 25
+        mouse_bb = BoundingBox(x-rad,y-rad, x+rad, y+rad)
+        mouse_collisions = tree.within_bb(mouse_bb)
+        move_rate_away = 0.000000001
+        for boid in mouse_collisions:
+            if boid.data.is_boid:
+                distance = math.sqrt((boid.data.x - x) ** 2 + (boid.data.y - y) ** 2) + .001
+                move_factor_x = boid.data.x - x
+                move_factor_y = boid.data.y - y
+                boid.data.dx += move_factor_x * (move_rate_away / distance)
+                boid.data.dy += move_factor_y * (move_rate_away / distance)
+
+
 
     
         
@@ -96,6 +143,7 @@ class Boid:
         self.dx = randint(-30,30)/10
         self.dy = randint(-30,30)/10
         self.size = size
+        self.is_boid = True
 
     def draw(self):
         dudraw.filled_circle(self.x, self.y, self.size)
@@ -109,14 +157,18 @@ class Boid:
         pass
 
     def move_twards(self, other_boids):
+
         move_factor_x = 0
         move_factor_y = 0
         move_rate_twards = 0.0019
         for boid in other_boids:
-            move_factor_x += boid.data.x
-            move_factor_y += boid.data.y
 
-        
+            if boid.data.is_boid:
+
+                move_factor_x += boid.data.x
+                move_factor_y += boid.data.y
+
+            
         if len(other_boids) != 0:
             move_factor_x /= len(other_boids)
             move_factor_y /= len(other_boids)
@@ -129,16 +181,32 @@ class Boid:
         move_factor_y = 0
         move_rate_away = 0.01
         for boid in other_boids:
-            distance = math.sqrt((boid.data.x - self.x) ** 2 + (boid.data.y - self.y) ** 2) + .001
-            move_factor_x += (self.x - boid.data.x) * (move_rate_away / distance)
-            move_factor_y += (self.y - boid.data.y) * (move_rate_away / distance)
+
+            if boid.data.is_boid:            
+                distance = math.sqrt((boid.data.x - self.x) ** 2 + (boid.data.y - self.y) ** 2) + .001
+                move_factor_x += (self.x - boid.data.x) * (move_rate_away / distance)
+                move_factor_y += (self.y - boid.data.y) * (move_rate_away / distance)
 
         
-       
-
+    
         self.dx += move_factor_x 
         self.dy += move_factor_y 
+        
+    def obs_move_away(self, other_boids):
+        move_factor_x = 0
+        move_factor_y = 0
+        move_rate_away = .15
+        for boid in other_boids:
 
+            if not boid.data.is_boid:            
+                distance = math.sqrt((boid.data.x - self.x) ** 2 + (boid.data.y - self.y) ** 2) + .001
+                move_factor_x += (self.x - boid.data.x) * (move_rate_away / distance)
+                move_factor_y += (self.y - boid.data.y) * (move_rate_away / distance)
+
+        
+    
+        self.dx += move_factor_x 
+        self.dy += move_factor_y 
 
     def align(self, other_boids):
         avg_dx = 0
@@ -147,8 +215,9 @@ class Boid:
 
 
         for boid in other_boids:
-            avg_dx += boid.data.dx
-            avg_dy += boid.data.dy
+            if boid.data.is_boid:
+                avg_dx += boid.data.dx
+                avg_dy += boid.data.dy
 
         if len(other_boids) != 0:
             avg_dx = avg_dx / len(other_boids)
@@ -161,6 +230,13 @@ class Boid:
 
     def avoid_borders(self):
         border_width = 60
+
+        if self.x >= x_scale or self.x <= 0 or self.y >= y_scale or self.y <= 0:
+            self.x = x_scale/2
+            self.y = y_scale/2
+            print("bruh")
+            return
+
         if self.x > x_scale - border_width:
             if self.x > x_scale - border_width / 2:
                     self.dx -= .1
@@ -179,7 +255,7 @@ class Boid:
             self.dy += .05
         
     def speed_limit(self):
-        speed_limit = 1
+        speed_limit = 1.3
         speed = math.sqrt(self.dx * self.dx + self.dy * self.dy)
         if speed > speed_limit:
             self.dx = (self.dx / speed) * speed_limit
@@ -202,7 +278,17 @@ class Boid:
         self.dx += randint(-100,100)/1000
         self.dy += randint(-100,100)/1000
 
-b = AllBoids(200, 13, 10)
+
+
+class Obj:
+    def __init__(self, x, y, size):
+        self.x = x
+        self.y = y
+        self.size = size
+        self.is_boid = False
+
+
+b = AllBoids(200, 13, 10, 30)
 b.draw()
 
 
